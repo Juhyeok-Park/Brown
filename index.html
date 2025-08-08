@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MacOS Style TTS</title>
+  <!-- Import SF Pro font for Apple-like typography -->
+  <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display" />
+  <style>
+    /* Global styles */
+    body {
+      margin: 0;
+      font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Glassmorphism utility class */
+    .glass {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Top menu bar styling */
+    .menu-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 1000;
+    }
+    .menu-left, .menu-center, .menu-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .menu-left {
+      font-size: 18px;
+    }
+    .menu-center {
+      flex: 1;
+      justify-content: center;
+      text-align: center;
+    }
+    .menu-right img {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Main content area for TTS controls */
+    main {
+      margin-top: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 20px;
+    }
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.3);
+      color: #000;
+    }
+    textarea {
+      height: 100px;
+      resize: none;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.3);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: rgba(255,255,255,0.5);
+    }
+
+    /* Dock styling */
+    .dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      border-radius: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    .dock-icon {
+      width: 64px;
+      height: 64px;
+      transition: transform 0.2s;
+      border-radius: 12px;
+    }
+    .dock-icon img {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+    }
+    .dock-icon:hover {
+      transform: scale(1.5);
+    }
+
+    /* Responsive adjustments for tablets */
+    @media (max-width: 768px) {
+      .dock-icon {
+        width: 48px;
+        height: 48px;
+      }
+      textarea {
+        height: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top menu bar mimicking macOS style -->
+  <div class="menu-bar glass">
+    <div class="menu-left">&#63743;</div>
+    <div class="menu-center" id="menu-time">--:--</div>
+    <div class="menu-right">
+      <img src="https://img.icons8.com/ios-glyphs/30/ffffff/wifi.png" alt="WiFi" />
+      <img src="https://img.icons8.com/ios-glyphs/30/ffffff/battery.png" alt="Battery" />
+    </div>
+  </div>
+
+  <!-- Main TTS interface -->
+  <main class="glass">
+    <h1>Gemini TTS Demo</h1>
+    <input id="apiKeyInput" type="password" placeholder="Enter Gemini API Key" />
+    <textarea id="textInput" placeholder="Type text to speak..."></textarea>
+    <button id="speakBtn">Speak</button>
+  </main>
+
+  <!-- Floating dock -->
+  <div class="dock glass">
+    <div class="dock-icon"><img src="https://img.icons8.com/fluency/96/finder.png" alt="Finder" /></div>
+    <div class="dock-icon"><img src="https://img.icons8.com/color/96/safari--v1.png" alt="Safari" /></div>
+    <div class="dock-icon"><img src="https://img.icons8.com/color/96/photos.png" alt="Photos" /></div>
+    <div class="dock-icon"><img src="https://img.icons8.com/fluency/96/console.png" alt="Terminal" /></div>
+  </div>
+
+  <script>
+    // Update the time in the menu bar
+    function updateTime() {
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      document.getElementById('menu-time').textContent = now.toLocaleString('en-US', options);
+    }
+    updateTime();
+    setInterval(updateTime, 60000);
+
+    // Handle TTS using Gemini API
+    async function synthesizeSpeech() {
+      const text = document.getElementById('textInput').value;
+      const apiKey = document.getElementById('apiKeyInput').value.trim();
+      if (!text || !apiKey) {
+        alert('Please enter both text and API key.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text }] }],
+            generationConfig: { responseMimeType: 'audio/mp3' }
+          })
+        });
+        const result = await response.json();
+        const audioData = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (audioData) {
+          const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
+          audio.play();
+        } else {
+          alert('No audio returned. Check your API key and input text.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error calling Gemini TTS API. Check console for details.');
+      }
+    }
+
+    document.getElementById('speakBtn').addEventListener('click', synthesizeSpeech);
+  </script>
+</body>
+</html>
